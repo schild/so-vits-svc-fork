@@ -56,9 +56,7 @@ class SineGen(torch.nn.Module):
         self.flag_for_pulse = flag_for_pulse
 
     def _f02uv(self, f0):
-        # generate uv signal
-        uv = (f0 > self.voiced_threshold).type(torch.float32)
-        return uv
+        return (f0 > self.voiced_threshold).type(torch.float32)
 
     def _f02sine(self, f0_values):
         """f0_values: (batchsize, length, dim)
@@ -88,7 +86,7 @@ class SineGen(torch.nn.Module):
             cumsum_shift = torch.zeros_like(rad_values)
             cumsum_shift[:, 1:, :] = tmp_over_one_idx * -1.0
 
-            sines = torch.sin(
+            return torch.sin(
                 torch.cumsum(rad_values + cumsum_shift, dim=1) * 2 * np.pi
             )
         else:
@@ -118,8 +116,7 @@ class SineGen(torch.nn.Module):
             i_phase = torch.cumsum(rad_values - tmp_cumsum, dim=1)
 
             # get the sines
-            sines = torch.cos(i_phase * 2 * np.pi)
-        return sines
+            return torch.cos(i_phase * 2 * np.pi)
 
     def forward(self, f0):
         """sine_tensor, uv = forward(f0)
@@ -262,9 +259,7 @@ class NSFHifiGANGenerator(torch.nn.Module):
         self.resblocks = nn.ModuleList()
         for i in range(len(self.ups)):
             ch = h["upsample_initial_channel"] // (2 ** (i + 1))
-            for j, (k, d) in enumerate(
-                zip(h["resblock_kernel_sizes"], h["resblock_dilation_sizes"])
-            ):
+            for k, d in zip(h["resblock_kernel_sizes"], h["resblock_dilation_sizes"]):
                 self.resblocks.append(resblock(ch, k, d))
 
         self.conv_post = weight_norm(Conv1d(ch, 1, 7, 1, padding=3))

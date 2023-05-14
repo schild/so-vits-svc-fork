@@ -41,7 +41,7 @@ def _process_one(
         LOG.info(f"Skip {filepath} because it is too short.")
         return
 
-    data_path = filepath.parent / (filepath.name + ".data.pt")
+    data_path = filepath.parent / f"{filepath.name}.data.pt"
     if data_path.exists() and not force_rebuild:
         return
 

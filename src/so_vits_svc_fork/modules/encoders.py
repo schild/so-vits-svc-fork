@@ -43,14 +43,14 @@ class SpeakerEncoder(torch.nn.Module):
             mel_slices = self.compute_partial_slices(
                 mel_len, partial_frames, partial_hop
             )
-            mels = list(mel[:, s] for s in mel_slices)
+            mels = [mel[:, s] for s in mel_slices]
             mels.append(last_mel)
             mels = torch.stack(tuple(mels), 0).squeeze(1)
 
             with torch.no_grad():
                 partial_embeds = self(mels)
             embed = torch.mean(partial_embeds, axis=0).unsqueeze(0)
-            # embed = embed / torch.linalg.norm(embed, 2)
+                # embed = embed / torch.linalg.norm(embed, 2)
         else:
             with torch.no_grad():
                 embed = self(last_mel)

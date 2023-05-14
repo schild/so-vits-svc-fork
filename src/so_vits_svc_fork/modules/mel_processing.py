@@ -74,13 +74,11 @@ def dynamic_range_decompression_torch(x, C=1):
 
 
 def spectral_normalize_torch(magnitudes):
-    output = dynamic_range_compression_torch(magnitudes)
-    return output
+    return dynamic_range_compression_torch(magnitudes)
 
 
 def spectral_de_normalize_torch(magnitudes):
-    output = dynamic_range_decompression_torch(magnitudes)
-    return output
+    return dynamic_range_decompression_torch(magnitudes)
 
 
 mel_basis = {}
@@ -96,8 +94,8 @@ def spectrogram_torch(y, hps, center=False):
     hop_size = hps.data.hop_length
     win_size = hps.data.win_length
     global hann_window
-    dtype_device = str(y.dtype) + "_" + str(y.device)
-    wnsize_dtype_device = str(win_size) + "_" + dtype_device
+    dtype_device = f"{str(y.dtype)}_{str(y.device)}"
+    wnsize_dtype_device = f"{str(win_size)}_{dtype_device}"
     if wnsize_dtype_device not in hann_window:
         hann_window[wnsize_dtype_device] = torch.hann_window(win_size).to(
             dtype=y.dtype, device=y.device
@@ -134,8 +132,8 @@ def spec_to_mel_torch(spec, hps):
     fmin = hps.data.mel_fmin
     fmax = hps.data.mel_fmax
     global mel_basis
-    dtype_device = str(spec.dtype) + "_" + str(spec.device)
-    fmax_dtype_device = str(fmax) + "_" + dtype_device
+    dtype_device = f"{str(spec.dtype)}_{str(spec.device)}"
+    fmax_dtype_device = f"{str(fmax)}_{dtype_device}"
     if fmax_dtype_device not in mel_basis:
         mel = librosa_mel_fn(
             sr=sampling_rate, n_fft=n_fft, n_mels=num_mels, fmin=fmin, fmax=fmax
@@ -162,9 +160,9 @@ def mel_spectrogram_torch(y, hps, center=False):
         LOG.info(f"max value is {torch.max(y)}")
 
     global mel_basis, hann_window
-    dtype_device = str(y.dtype) + "_" + str(y.device)
-    fmax_dtype_device = str(fmax) + "_" + dtype_device
-    wnsize_dtype_device = str(win_size) + "_" + dtype_device
+    dtype_device = f"{str(y.dtype)}_{str(y.device)}"
+    fmax_dtype_device = f"{str(fmax)}_{dtype_device}"
+    wnsize_dtype_device = f"{str(win_size)}_{dtype_device}"
     if fmax_dtype_device not in mel_basis:
         mel = librosa_mel_fn(
             sr=sampling_rate, n_fft=n_fft, n_mels=num_mels, fmin=fmin, fmax=fmax

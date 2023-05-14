@@ -75,10 +75,8 @@ def get_output_path(input_path: Path) -> Path:
 
 def get_supported_file_types() -> tuple[tuple[str, str], ...]:
     res = tuple(
-        [
-            (extension, f".{extension.lower()}")
-            for extension in sf.available_formats().keys()
-        ]
+        (extension, f".{extension.lower()}")
+        for extension in sf.available_formats().keys()
     )
 
     # Sort by popularity
@@ -600,7 +598,7 @@ def main():
     PRESET_KEYS = [
         key
         for key in values.keys()
-        if not any(exclude in key for exclude in ["preset", "browse"])
+        if all(exclude not in key for exclude in ["preset", "browse"])
     ]
 
     def apply_preset(name: str) -> None:
@@ -618,16 +616,16 @@ def main():
     # with ProcessPool(max_workers=1) as pool:
     # to support Linux
     with ProcessPool(
-        max_workers=min(2, multiprocessing.cpu_count()),
-        context=multiprocessing.get_context("spawn"),
-    ) as pool:
+            max_workers=min(2, multiprocessing.cpu_count()),
+            context=multiprocessing.get_context("spawn"),
+        ) as pool:
         future: None | ProcessFuture = None
         infer_futures: set[ProcessFuture] = set()
         while True:
             event, values = window.read(200)
             if event == sg.WIN_CLOSED:
                 break
-            if not event == sg.EVENT_TIMEOUT:
+            if event != sg.EVENT_TIMEOUT:
                 LOG.info(f"Event {event}, values {values}")
             if event.endswith("_path"):
                 for name in window.AllKeysDict:
@@ -787,14 +785,6 @@ def main():
             elif event == "onnx_export":
                 try:
                     raise NotImplementedError("ONNX export is not implemented yet.")
-                    from so_vits_svc_fork.modules.onnx._export import onnx_export
-
-                    onnx_export(
-                        input_path=Path(values["model_path"]),
-                        output_path=Path(values["model_path"]).with_suffix(".onnx"),
-                        config_path=Path(values["config_path"]),
-                        device="cpu",
-                    )
                 except Exception as e:
                     LOG.exception(e)
             if future is not None and future.done():

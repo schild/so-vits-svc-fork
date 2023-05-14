@@ -114,8 +114,7 @@ def _resize_f0(
         np.arange(0, len(source)),
         source,
     )
-    res = np.nan_to_num(target)
-    return res
+    return np.nan_to_num(target)
 
 
 def compute_f0_pyworld(

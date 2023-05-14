@@ -31,10 +31,8 @@ def preprocess_config(
     val = []
     test = []
     spk_dict = {}
-    spk_id = 0
-    for speaker in os.listdir(input_dir):
+    for spk_id, speaker in enumerate(os.listdir(input_dir)):
         spk_dict[speaker] = spk_id
-        spk_id += 1
         paths = []
         for path in tqdm(list((input_dir / speaker).rglob("*.wav"))):
             if get_duration(filename=path) < 0.3:
@@ -67,11 +65,13 @@ def preprocess_config(
     config = deepcopy(
         json.loads(
             (
-                CONFIG_TEMPLATE_DIR
-                / (
-                    config_name
-                    if config_name.endswith(".json")
-                    else config_name + ".json"
+                (
+                    CONFIG_TEMPLATE_DIR
+                    / (
+                        config_name
+                        if config_name.endswith(".json")
+                        else f"{config_name}.json"
+                    )
                 )
             ).read_text(encoding="utf-8")
         )

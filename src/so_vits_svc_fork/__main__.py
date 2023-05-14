@@ -668,7 +668,7 @@ def pre_sd(
     assert huggingface_token is not None
     huggingface_token = huggingface_token.rstrip(" \n\r\t\0")
     if len(huggingface_token) <= 1:
-        raise ValueError("HuggingFace token is empty: " + huggingface_token)
+        raise ValueError(f"HuggingFace token is empty: {huggingface_token}")
 
     if max_speakers == 1:
         LOG.warning("Consider using pre-split if max_speakers == 1")
@@ -782,9 +782,9 @@ def clean():
     """Clean up files, only useful if you are using the default file structure"""
     import shutil
 
-    folders = ["dataset", "filelists", "logs"]
     # if pyip.inputYesNo(f"Are you sure you want to delete files in {folders}?") == "yes":
     if input("Are you sure you want to delete files in {folders}?") in ["yes", "y"]:
+        folders = ["dataset", "filelists", "logs"]
         for folder in folders:
             if Path(folder).exists():
                 shutil.rmtree(folder)
@@ -827,24 +827,6 @@ def onnx(
 ) -> None:
     """Export model to onnx (currently not working)"""
     raise NotImplementedError("ONNX export is not yet supported")
-    input_path = Path(input_path)
-    if input_path.is_dir():
-        input_path = list(input_path.glob("*.pth"))[0]
-    if output_path is None:
-        output_path = input_path.with_suffix(".onnx")
-    output_path = Path(output_path)
-    if output_path.is_dir():
-        output_path = output_path / (input_path.stem + ".onnx")
-    config_path = Path(config_path)
-    device_ = torch.device(device)
-    from so_vits_svc_fork.modules.onnx._export import onnx_export
-
-    onnx_export(
-        input_path=input_path,
-        output_path=output_path,
-        config_path=config_path,
-        device=device_,
-    )
 
 
 @cli.command
