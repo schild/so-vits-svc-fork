@@ -36,10 +36,8 @@ def is_notebook():
 
         if "IPKernelApp" not in get_ipython().config:  # pragma: no cover
             raise ImportError("console")
-            return False
         if "VSCODE_PID" in os.environ:  # pragma: no cover
             raise ImportError("vscode")
-            return False
     except Exception:
         return False
     else:  # pragma: no cover

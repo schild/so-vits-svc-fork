@@ -178,7 +178,7 @@ def realtime(
         input_device_candidates = [
             i for i, d in enumerate(devices) if d["name"] == input_device
         ]
-        if len(input_device_candidates) == 0:
+        if not input_device_candidates:
             LOG.warning(f"Input device {input_device} not found, using default")
             input_device = None
         else:
@@ -187,7 +187,7 @@ def realtime(
         output_device_candidates = [
             i for i, d in enumerate(devices) if d["name"] == output_device
         ]
-        if len(output_device_candidates) == 0:
+        if not output_device_candidates:
             LOG.warning(f"Output device {output_device} not found, using default")
             output_device = None
         else:
@@ -216,12 +216,12 @@ def realtime(
     )
 
     def callback(
-        indata: np.ndarray,
-        outdata: np.ndarray,
-        frames: int,
-        time: int,
-        status: sd.CallbackFlags,
-    ) -> None:
+            indata: np.ndarray,
+            outdata: np.ndarray,
+            frames: int,
+            time: int,
+            status: sd.CallbackFlags,
+        ) -> None:
         LOG.debug(
             f"Frames: {frames}, Status: {status}, Shape: {indata.shape}, Time: {time}"
         )
@@ -246,10 +246,7 @@ def realtime(
             inference = model.process(
                 **kwargs,
             ).reshape(-1, 1)
-        if passthrough_original:
-            outdata[:] = (indata + inference) / 2
-        else:
-            outdata[:] = inference
+        outdata[:] = (indata + inference) / 2 if passthrough_original else inference
         rtf = t.elapsed / block_seconds
         LOG.info(f"Realtime inference time: {t.elapsed:.3f}s, RTF: {rtf:.3f}")
         if rtf > 1:

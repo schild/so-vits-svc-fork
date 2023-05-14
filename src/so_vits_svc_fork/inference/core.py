@@ -31,14 +31,12 @@ def pad_array(array_, target_length: int):
             + target_length,
             ...,
         ]
-    else:
-        pad_width = target_length - current_length
-        pad_left = pad_width // 2
-        pad_right = pad_width - pad_left
-        padded_arr = np.pad(
-            array_, (pad_left, pad_right), "constant", constant_values=(0, 0)
-        )
-        return padded_arr
+    pad_width = target_length - current_length
+    pad_left = pad_width // 2
+    pad_right = pad_width - pad_left
+    return np.pad(
+        array_, (pad_left, pad_right), "constant", constant_values=(0, 0)
+    )
 
 
 @attrs.frozen(kw_only=True)
@@ -199,12 +197,11 @@ class Svc:
                 raise ValueError(
                     f"Speaker id {speaker} >= number of speakers {len(self.spk2id.__dict__)}"
                 )
+        elif speaker in self.spk2id.__dict__:
+            speaker_id = self.spk2id.__dict__[speaker]
         else:
-            if speaker in self.spk2id.__dict__:
-                speaker_id = self.spk2id.__dict__[speaker]
-            else:
-                LOG.warning(f"Speaker {speaker} is not found. Use speaker 0 instead.")
-                speaker_id = 0
+            LOG.warning(f"Speaker {speaker} is not found. Use speaker 0 instead.")
+            speaker_id = 0
         speaker_candidates = list(
             filter(lambda x: x[1] == speaker_id, self.spk2id.__dict__.items())
         )
@@ -212,7 +209,7 @@ class Svc:
             raise ValueError(
                 f"Speaker_id {speaker_id} is not unique. Candidates: {speaker_candidates}"
             )
-        elif len(speaker_candidates) == 0:
+        elif not speaker_candidates:
             raise ValueError(f"Speaker_id {speaker_id} is not found.")
         speaker = speaker_candidates[0][0]
         sid = torch.LongTensor([int(speaker_id)]).to(self.device).unsqueeze(0)
@@ -368,8 +365,6 @@ class Crossfader:
             raise ValueError("crossfade_len must be >= 0")
         if additional_infer_after_len < 0:
             raise ValueError("additional_infer_len must be >= 0")
-        if additional_infer_before_len < 0:
-            raise ValueError("additional_infer_len must be >= 0")
         self.additional_infer_before_len = additional_infer_before_len
         self.additional_infer_after_len = additional_infer_after_len
         self.crossfade_len = crossfade_len
@@ -411,8 +406,7 @@ class Crossfader:
         # concat last input and infer
         input_audio_concat = np.concatenate([self.last_input_left, input_audio])
         del input_audio
-        pad_len = 0
-        if pad_len:
+        if pad_len := 0:
             infer_audio_concat = self.infer(
                 np.pad(input_audio_concat, (pad_len, pad_len), mode="reflect"),
                 *args,
@@ -516,7 +510,6 @@ class RealtimeVC(Crossfader):
         pad_seconds: float = 0.5,
         chunk_seconds: float = 0.5,
     ) -> ndarray[Any, dtype[float32]]:
-        # infer
         if self.split:
             return self.svc_model.infer_silence(
                 audio=input_audio,
@@ -531,24 +524,23 @@ class RealtimeVC(Crossfader):
                 chunk_seconds=chunk_seconds,
                 absolute_thresh=True,
             )
+        rms = np.sqrt(np.mean(input_audio**2))
+        min_rms = 10 ** (db_thresh / 20)
+        if rms < min_rms:
+            LOG.info(f"Skip silence: RMS={rms:.2f} < {min_rms:.2f}")
+            return np.zeros_like(input_audio)
         else:
-            rms = np.sqrt(np.mean(input_audio**2))
-            min_rms = 10 ** (db_thresh / 20)
-            if rms < min_rms:
-                LOG.info(f"Skip silence: RMS={rms:.2f} < {min_rms:.2f}")
-                return np.zeros_like(input_audio)
-            else:
-                LOG.info(f"Start inference: RMS={rms:.2f} >= {min_rms:.2f}")
-                infered_audio_c, _ = self.svc_model.infer(
-                    speaker=speaker,
-                    transpose=transpose,
-                    audio=input_audio,
-                    cluster_infer_ratio=cluster_infer_ratio,
-                    auto_predict_f0=auto_predict_f0,
-                    noise_scale=noise_scale,
-                    f0_method=f0_method,
-                )
-                return infered_audio_c.cpu().numpy()
+            LOG.info(f"Start inference: RMS={rms:.2f} >= {min_rms:.2f}")
+            infered_audio_c, _ = self.svc_model.infer(
+                speaker=speaker,
+                transpose=transpose,
+                audio=input_audio,
+                cluster_infer_ratio=cluster_infer_ratio,
+                auto_predict_f0=auto_predict_f0,
+                noise_scale=noise_scale,
+                f0_method=f0_method,
+            )
+            return infered_audio_c.cpu().numpy()
 
 
 class RealtimeVC2:
@@ -603,7 +595,7 @@ class RealtimeVC2:
                 ref=1,  # use absolute threshold
             )
         )
-        assert len(chunk_list) > 0
+        assert chunk_list
         LOG.info(f"Chunk list: {chunk_list}")
         # do not infer LAST incomplete is_speech chunk and save to store
         if chunk_list[-1].is_speech:
@@ -621,10 +613,10 @@ class RealtimeVC2:
 
         # calculate lengths and determine compress rate
         total_speech_len = sum(
-            [c.duration if c.is_speech else 0 for c in self.chunk_store]
+            c.duration if c.is_speech else 0 for c in self.chunk_store
         )
         total_silence_len = sum(
-            [c.duration if not c.is_speech else 0 for c in self.chunk_store]
+            c.duration if not c.is_speech else 0 for c in self.chunk_store
         )
         input_audio_len = input_audio.shape[0]
         silence_compress_rate = total_silence_len / max(

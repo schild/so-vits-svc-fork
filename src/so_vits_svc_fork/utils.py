@@ -56,7 +56,7 @@ def download_file(
     overwrite: bool = False,
     **tqdm_kwargs: Any,
 ):
-    if skip_if_exists is True and overwrite is True:
+    if skip_if_exists and overwrite:
         raise ValueError("skip_if_exists and overwrite cannot be both True")
     filepath = Path(filepath)
     filepath.parent.mkdir(parents=True, exist_ok=True)
@@ -71,14 +71,16 @@ def download_file(
     temppath.unlink(missing_ok=True)
     resp = requests.get(url, stream=True)
     total = int(resp.headers.get("content-length", 0))
-    kwargs = dict(
-        total=total,
-        unit="iB",
-        unit_scale=True,
-        unit_divisor=1024,
-        desc=f"Downloading {filepath.name}",
+    kwargs = (
+        dict(
+            total=total,
+            unit="iB",
+            unit_scale=True,
+            unit_divisor=1024,
+            desc=f"Downloading {filepath.name}",
+        )
+        | tqdm_kwargs
     )
-    kwargs.update(tqdm_kwargs)
     with temppath.open("wb") as f, tqdm_cls(**kwargs) as pbar:
         for data in resp.iter_content(chunk_size=chunk_size):
             size = f.write(data)
@@ -270,9 +272,7 @@ def save_checkpoint(
     checkpoint_path: Path | str,
 ) -> None:
     LOG.info(
-        "Saving model and optimizer state at epoch {} to {}".format(
-            iteration, checkpoint_path
-        )
+        f"Saving model and optimizer state at epoch {iteration} to {checkpoint_path}"
     )
     if hasattr(model, "module"):
         state_dict = model.module.state_dict()
@@ -305,7 +305,7 @@ def clean_checkpoints(
     path_to_models = Path(path_to_models)
 
     # Define sort key functions
-    name_key = lambda p: int(re.match(r"[GD]_(\d+)", p.stem).group(1))
+    name_key = lambda p: int(re.match(r"[GD]_(\d+)", p.stem)[1])
     time_key = lambda p: p.stat().st_mtime
     path_key = lambda p: (p.stem[0], time_key(p) if sort_by_time else name_key(p))
 
@@ -337,11 +337,9 @@ def clean_checkpoints(
 
 def latest_checkpoint_path(dir_path: Path | str, regex: str = "G_*.pth") -> Path | None:
     dir_path = Path(dir_path)
-    name_key = lambda p: int(re.match(r"._(\d+)\.pth", p.name).group(1))
+    name_key = lambda p: int(re.match(r"._(\d+)\.pth", p.name)[1])
     paths = list(sorted(dir_path.glob(regex), key=name_key))
-    if len(paths) == 0:
-        return None
-    return paths[-1]
+    return None if not paths else paths[-1]
 
 
 def plot_spectrogram_to_numpy(spectrogram: ndarray) -> ndarray:
@@ -382,8 +380,7 @@ def get_backup_hparams(
 
 def get_hparams(config_path: Path | str) -> HParams:
     config = json.loads(Path(config_path).read_text("utf-8"))
-    hparams = HParams(**config)
-    return hparams
+    return HParams(**config)
 
 
 def repeat_expand_2d(content: torch.Tensor, target_len: int) -> torch.Tensor:
@@ -419,8 +416,7 @@ def get_gpu_memory(type_: Literal["total", "free", "used"]) -> Sequence[int] | N
             .decode("ascii")
             .split("\n")[:-1][1:]
         )
-        memory_free_values = [int(x.split()[0]) for i, x in enumerate(memory_free_info)]
-        return memory_free_values
+        return [int(x.split()[0]) for x in memory_free_info]
     except Exception:
         return
 

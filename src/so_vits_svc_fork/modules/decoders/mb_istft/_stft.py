@@ -191,14 +191,11 @@ class STFT(torch.nn.Module):
             inverse_transform *= float(self.filter_length) / self.hop_length
 
         inverse_transform = inverse_transform[:, :, int(self.filter_length / 2) :]
-        inverse_transform = inverse_transform[:, :, : -int(self.filter_length / 2) :]
-
-        return inverse_transform
+        return inverse_transform[:, :, : -int(self.filter_length / 2) :]
 
     def forward(self, input_data):
         self.magnitude, self.phase = self.transform(input_data)
-        reconstruction = self.inverse(self.magnitude, self.phase)
-        return reconstruction
+        return self.inverse(self.magnitude, self.phase)
 
 
 class TorchSTFT(torch.nn.Module):
@@ -240,5 +237,4 @@ class TorchSTFT(torch.nn.Module):
 
     def forward(self, input_data):
         self.magnitude, self.phase = self.transform(input_data)
-        reconstruction = self.inverse(self.magnitude, self.phase)
-        return reconstruction
+        return self.inverse(self.magnitude, self.phase)

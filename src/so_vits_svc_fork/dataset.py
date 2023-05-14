@@ -15,9 +15,11 @@ from .hparams import HParams
 class TextAudioDataset(Dataset):
     def __init__(self, hps: HParams, is_validation: bool = False):
         self.datapaths = [
-            Path(x).parent / (Path(x).name + ".data.pt")
+            Path(x).parent / f"{Path(x).name}.data.pt"
             for x in Path(
-                hps.data.validation_files if is_validation else hps.data.training_files
+                hps.data.validation_files
+                if is_validation
+                else hps.data.training_files
             )
             .read_text("utf-8")
             .splitlines()
@@ -33,10 +35,10 @@ class TextAudioDataset(Dataset):
 
         # cut long data randomly
         spec_len = data["mel_spec"].shape[1]
-        hop_len = self.hps.data.hop_length
         if spec_len > self.max_spec_len:
             start = self.random.randint(0, spec_len - self.max_spec_len)
             end = start + self.max_spec_len - 10
+            hop_len = self.hps.data.hop_length
             for key in data.keys():
                 if key == "audio":
                     data[key] = data[key][:, start * hop_len : end * hop_len]
@@ -68,13 +70,12 @@ class TextAudioCollate(nn.Module):
         batch = [b for b in batch if b is not None]
         batch = list(sorted(batch, key=lambda x: x["mel_spec"].shape[1], reverse=True))
         lengths = torch.tensor([b["mel_spec"].shape[1] for b in batch]).long()
-        results = {}
-        for key in batch[0].keys():
-            if key not in ["spk"]:
-                results[key] = _pad_stack([b[key] for b in batch]).cpu()
-            else:
-                results[key] = torch.tensor([[b[key]] for b in batch]).cpu()
-
+        results = {
+            key: _pad_stack([b[key] for b in batch]).cpu()
+            if key not in ["spk"]
+            else torch.tensor([[b[key]] for b in batch]).cpu()
+            for key in batch[0].keys()
+        }
         return (
             results["content"],
             results["f0"],

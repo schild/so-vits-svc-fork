@@ -53,12 +53,11 @@ def train_cluster(
             )
     LOG.info(f"Clustering took {t.elapsed:.2f} seconds")
 
-    x = {
+    return {
         "n_features_in_": kmeans.n_features_in_,
         "_n_threads": kmeans._n_threads,
         "cluster_centers_": kmeans.cluster_centers_,
     }
-    return x
 
 
 def main(

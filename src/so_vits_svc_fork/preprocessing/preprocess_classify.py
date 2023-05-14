@@ -67,21 +67,18 @@ def preprocess_classify(
             console.print(f"Folders updated: {[x.name for x in folders]}")
             last_folders = folders
 
-        # get folder
-        folder_candidates = [x for x in folders if x.name.startswith(key)]
-        if len(folder_candidates) == 0:
-            if create_new:
-                folder = output_dir_ / key
-            else:
-                console.print(f"No folder starts with {key}.")
-                continue
-        else:
+        if folder_candidates := [x for x in folders if x.name.startswith(key)]:
             if len(folder_candidates) > 1:
                 LOG.warning(
                     f"Multiple folders ({[x.name for x in folder_candidates]}) start with {key}. "
                     f"Using first one ({folder_candidates[0].name})."
                 )
             folder = folder_candidates[0]
+        elif create_new:
+            folder = output_dir_ / key
+        else:
+            console.print(f"No folder starts with {key}.")
+            continue
         folder.mkdir(exist_ok=True)
 
         # move file
